@@ -1,0 +1,336 @@
+﻿@page "/"
+@inject IJSRuntime JSRuntime
+@using Microsoft.AspNetCore.Components.Forms
+
+
+
+<PageTitle>KFBot</PageTitle>
+
+
+
+
+<div class="container" style="background:url(https://www.kuwait-fund.org/o/kwfund-kw-theme/images/header_bg.jpg) 100% 0 no-repeat">
+    <div class="k-fund-logo">
+        <div class="">
+            <img src="https://www.kuwait-fund.org/o/kwfund-kw-theme/images/logo.svg" alt="Logo" class="logo" width="400">
+
+        </div>
+        <div class="" style="padding-left:10px">
+            <img src="Image\logo.png" alt="Logo" width="75" height="75">
+        </div>
+
+    </div>
+    <div class="chat-box-wrapper">
+        <div class="chat-box">
+            <div class="chat-container">
+                <ul class="messages">
+                    @foreach (var message in messages)
+                    {
+                        <li class="message @(message.IsBotMessage ? "bot-message" : "user-message")">
+                            <span class="message-text">@message.Text</span>
+                            <span class="message-time">@message.Timestamp.ToString("HH:mm")</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+            <div class="spinner" style="display:@(IsLoading ? "block" : "none")"></div>
+        </div>
+        <div class="input-container">
+            <div class="input-wrapper">
+                <input type="text" value="@userMessage" @oninput="@(e => userMessage = e.Value.ToString())" @onkeypress="@(e => HandleKeyPress(e))" placeholder="Type a message..." />
+                <button disabled="@OneMessageAtATIme" @onclick="SendMessage">Send</button>
+            </div>
+            @*  <div class="pt-2">
+            <div style="direction: rtl;background: #a2a2a280;">
+            <InputFile OnChange="HandleFileSelected" />
+            <button @onclick="RemoveFile">X</button>
+            </div>
+
+            </div> *@
+            <div class="pt-2">
+                <div class="file-container">
+                    @if (refereshInputFile)
+                    {
+                        <InputFile OnChange="HandleFileSelected" />
+                        <button @onclick="RemoveFile">X</button>
+                    }
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+    @*  @if (ErroeMessage)
+    {
+    <div class="alert alert-danger" role="alert">
+    SomeThing went wrong
+    </div>
+    } *@
+</div>
+
+@code {
+    private string userMessage;
+    bool ErroeMessage { get; set; } = false;
+    bool OneMessageAtATIme { get; set; } = false;
+    bool refereshInputFile { get; set; } = true;
+    Message Messagez = new Message();
+    private bool IsLoading { get; set; } = false;
+    private IBrowserFile selectedFile;
+    private List<Message> messages = new List<Message>
+    {
+         new Message { Text = "Welcome to Kuwait Employee Self-Service Bot - KFBot!", IsBotMessage = true, Timestamp = DateTime.Now.AddMinutes(-1) },
+        // new Message { Text = "I'm doing great, thanks!", IsBotMessage = false, Timestamp = DateTime.Now.AddMinutes(-2) },
+        // new Message { Text = "That's good to hear!", IsBotMessage = true, Timestamp = DateTime.Now.AddMinutes(-1) }
+    };
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+    }
+    private async Task RemoveFile()
+    {
+
+        selectedFile = null;
+        //   selectedFile.Rem;
+        refereshInputFile = false;
+        await Task.Delay(10);
+        refereshInputFile = true;
+
+
+    }
+
+    private async Task SendMessage()
+    {
+        if (!string.IsNullOrWhiteSpace(userMessage))
+        {
+            OneMessageAtATIme = true;
+            IsLoading = true;
+            messages.Add(new Message { Text = userMessage, IsBotMessage = false, Timestamp = DateTime.Now });
+            await ScrollToBottom();
+
+            if (userMessage != null && selectedFile != null)
+            {
+                var response = await chatService.ChatApiCall(selectedFile, userMessage);
+                if (response.IsSuccessStatusCode)
+                {
+                    messages.Add(new Message { Text = response.Response, IsBotMessage = true, Timestamp = DateTime.Now });
+                    userMessage = ""; // Clear input
+                }
+                else
+                {
+                    ErroeMessage = true;
+                }
+
+                IsLoading = false;
+                OneMessageAtATIme = false;
+                await Task.Delay(100); // Delay to allow scroll to bottom
+                await ScrollToBottom();
+                userMessage = null;
+            }
+            else
+            {
+                var response = await chatService.ChatApiCallMessage(selectedFile, userMessage);
+                if (response.IsSuccessStatusCode)
+                {
+                    messages.Add(new Message { Text = response.Response, IsBotMessage = true, Timestamp = DateTime.Now });
+                    userMessage = ""; // Clear input
+                }
+                else
+                {
+                    ErroeMessage = true;
+                }
+
+                IsLoading = false;
+                OneMessageAtATIme = false;
+                await Task.Delay(100); // Delay to allow scroll to bottom
+                await ScrollToBottom();
+                userMessage = null;
+            }
+        }
+
+
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (!OneMessageAtATIme && e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("scrollToBottom");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Something went wrong with scrollbar");
+        }
+    }
+
+
+    public class Message
+    {
+        public string Text { get; set; }
+        public bool IsBotMessage { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+}
+
+<script>
+    window.scrollToBottom = () => {
+        var chatBox = document.querySelector('.chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
+    };
+</script>
+
+<style>
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+        padding: 10px;
+    }
+
+    .k-fund-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        bottom: 20px;
+    }
+
+        .k-fund-logo .logo {
+            max-width: 100%; /* Ensure the logo is responsive */
+            height: auto;
+        }
+
+
+    .chat-box-wrapper {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        bottom: 20px;
+        width: 100%;
+        max-width: 500px; /* Maximum width of the chat box */
+    }
+
+    .chat-box {
+        border: 1px solid #ccc;
+        background: #a2a2a280;
+        border-radius: 5px;
+        height: calc(100vh - 220px); /* chatbox height  */
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .chat-container {
+        padding: 10px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .messages {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .message {
+        padding: 10px;
+        border-radius: 5px;
+        max-width: 70%;
+    }
+
+    .user-message {
+        background-color: #F0F0F0;
+        align-self: flex-end;
+    }
+
+    .bot-message {
+        background-color: #DCF8C6;
+        align-self: flex-start;
+    }
+
+    .message-text {
+        word-wrap: break-word;
+    }
+
+    .message-time {
+        font-size: 0.8em;
+        color: #999;
+    }
+
+    .input-container {
+        padding-top: 10px;
+        width: 100%;
+        max-width: 600px; /* Match the chat box's max-width */
+    }
+
+    .input-wrapper {
+        display: flex;
+        align-items: center;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    input[type="text"] {
+        flex-grow: 1;
+        padding: 10px;
+        border: none;
+        outline: none;
+    }
+
+    input[type="file"] {
+        margin-left: 10px;
+    }
+
+    button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 10px 15px;
+        cursor: pointer;
+    }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:focus {
+            outline: none;
+        }
+
+
+
+
+    .file-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        direction: rtl;
+        background: #a2a2a280;
+    }
+
+        .file-container button {
+            background: #8184841a;
+            border: none;
+            cursor: pointer;
+            color: red;
+        }
+
+            .file-container button:hover {
+                background: #534646a3;
+                cursor: pointer;
+                color: white;
+            }
+</style>
