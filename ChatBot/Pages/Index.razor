@@ -88,14 +88,10 @@
     }
     private async Task RemoveFile()
     {
-
         selectedFile = null;
-        //   selectedFile.Rem;
         refereshInputFile = false;
         await Task.Delay(10);
         refereshInputFile = true;
-
-
     }
 
     private async Task SendMessage()
@@ -109,11 +105,11 @@
 
             if (userMessage != null && selectedFile != null)
             {
-                var response = await chatService.ChatApiCall(selectedFile, userMessage);
+                var response = await chatService.SendDocumentRelatedMessage(selectedFile, userMessage);
                 if (response.IsSuccessStatusCode)
                 {
                     messages.Add(new Message { Text = response.Response, IsBotMessage = true, Timestamp = DateTime.Now });
-                    userMessage = ""; // Clear input
+                    userMessage = string.Empty;
                 }
                 else
                 {
@@ -122,17 +118,17 @@
 
                 IsLoading = false;
                 OneMessageAtATIme = false;
-                await Task.Delay(100); // Delay to allow scroll to bottom
+                await Task.Delay(100);
                 await ScrollToBottom();
-                userMessage = null;
+                userMessage = string.Empty;
             }
             else
             {
-                var response = await chatService.ChatApiCallMessage(selectedFile, userMessage);
+                var response = await chatService.SendGeneralMessage(selectedFile, userMessage);
                 if (response.IsSuccessStatusCode)
                 {
                     messages.Add(new Message { Text = response.Response, IsBotMessage = true, Timestamp = DateTime.Now });
-                    userMessage = ""; // Clear input
+                    userMessage = string.Empty;
                 }
                 else
                 {
@@ -143,7 +139,7 @@
                 OneMessageAtATIme = false;
                 await Task.Delay(100); // Delay to allow scroll to bottom
                 await ScrollToBottom();
-                userMessage = null;
+                userMessage = string.Empty;
             }
         }
 

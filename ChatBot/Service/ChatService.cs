@@ -16,54 +16,8 @@ namespace ChatBot.Service
         {
             _config = configuration;
         }
-        /*public async Task<ApiResponse> ChatApiCall(IBrowserFile file, string message)
-        {
-            try
-            {
-                var url = "https://b892-35-245-72-2.ngrok-free.app/process-request"; // Replace with the correct endpoint
-                var content = new MultipartFormDataContent();
-
-                if (file != null)
-                {
-                    var fileContent = new StreamContent(file.OpenReadStream());
-                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
-                    content.Add(fileContent, "file", file.Name);
-                }
-
-                if (!string.IsNullOrWhiteSpace(message))
-                {
-                   // content.Add(new StringContent(message), "question");
-                    content.Add(new StringContent(message), "prompt");
-                }
-                var response = await httpClient.PostAsync(url, content);
-
-                var responseString = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Response: {responseString}"); // Debug: Log the full response
-
-                if (response.IsSuccessStatusCode)
-                {
-                    //var responseContent = JsonSerializer.Deserialize<ApiResponse>(responseString);
-                    if (responseString != null && !string.IsNullOrEmpty(responseString))
-                    {
-                        return new ApiResponse { StatusCode = response.StatusCode, IsSuccessStatusCode = true, Response = responseString };
-                    }
-                    else
-                    {
-                        return new ApiResponse { StatusCode = response.StatusCode, IsSuccessStatusCode = true, Response = "Information Not Found !" };
-                    }
-                }
-                else
-                {
-                    return new ApiResponse { StatusCode = response.StatusCode, IsSuccessStatusCode = false, ErrorMessage = responseString };
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ApiResponse { StatusCode = HttpStatusCode.BadRequest, IsSuccessStatusCode = false, ErrorMessage = ex.Message };
-            }
-        }
-*/
-        public async Task<ApiResponse> ChatApiCall(IBrowserFile file, string message)
+        // APi CAll for Document Process related Query
+        public async Task<ApiResponse> SendDocumentRelatedMessage(IBrowserFile file, string message)
         {
             try
             {
@@ -112,8 +66,9 @@ namespace ChatBot.Service
 
 
 
-
-        public async Task<ApiResponse> ChatApiCallMessage(IBrowserFile file, string Message)
+        // APi CAll for General Query like TAMS related
+        
+        public async Task<ApiResponse> SendGeneralMessage(IBrowserFile file, string Message)
         {
             try
             {
